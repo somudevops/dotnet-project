@@ -15,7 +15,7 @@ namespace FlowerShop.Controllers
 
         public ActionResult About()
         {
-            ViewBag.Message = "Your application description page.";
+            ViewBag.Message = "Mani Kumar Reddy";
 
             return View();
         }
