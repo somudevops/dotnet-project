@@ -15,13 +15,6 @@ variables:
   BuildPlatform: "Any Cpu"
 
 steps:
-  - task: SonarCloudPrepare@1
-    inputs:
-      SonarCloud: 'Sonar-ServiceConnection'
-      organization: 'smkr-devops'
-      scannerMode: 'MSBuild'
-      projectKey: 'smkr-devops_Key'
-      projectName: 'SonarCloudProject'
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: 
@@ -37,10 +30,14 @@ steps:
       msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
       platform: '$(BuildPlatform)'
       configuration: '$(BuildConfiguration)'
-  - task: SonarCloudAnalyze@1
-  - task: SonarCloudPublish@1
+  - task: VSTest@2
     inputs:
-      pollingTimeoutSec: '300'
+      testSelector: 'testAssemblies'
+      testAssemblyVer2: |
+        **\*test*.dll
+        !**\*TestAdapter.dll
+        !**\obj\**
+      searchFolder: '$(System.DefaultWorkingDirectory)'
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
