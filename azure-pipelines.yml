@@ -46,3 +46,15 @@ steps:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
       ArtifactName: 'drop'
       publishLocation: 'Container'
+  - task: DownloadBuildArtifacts@1
+    inputs:
+      buildType: 'current'
+      downloadType: 'single'
+      downloadPath: '$(System.ArtifactsDirectory)'
+  - task: AzureWebApp@1
+    inputs:
+      azureSubscription: 'MANI''s AZURE(12c0d075-059f-4523-8432-5eee63b9ac55)'
+      appType: 'webApp'
+      appName: 'dotnet-project-webapp'
+      package: '$(System.DefaultWorkingDirectory)'
+      deploymentMethod: 'auto'
