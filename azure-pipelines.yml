@@ -9,16 +9,12 @@ trigger:
 pool:
   vmImage: 'windows-latest'
 
-stages:
-  - stage: Build
-
-variables: 
+variables:
   Env: "Dev"
   BuildConfiguration: "Release"
   BuildPlatform: "Any Cpu"
 
 steps:
-
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: 
@@ -26,14 +22,22 @@ steps:
   - task: NuGetCommand@2
     inputs:
       command: 'restore'
-      restoreSolution: '**/*.sln'
+      restoreSolution: 'Dotnet/FlowerShop.sln'
       feedsToUse: 'select'
   - task: VSBuild@1
     inputs:
-      solution: '**\*.sln'
+      solution: 'Dotnet/FlowerShop.sln'
       msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
       platform: '$(BuildPlatform)'
       configuration: '$(BuildConfiguration)'
+  - task: VSTest@2
+    inputs:
+      testSelector: 'testAssemblies'
+      testAssemblyVer2: |
+        **\*test*.dll
+        !**\*TestAdapter.dll
+        !**\obj\**
+      searchFolder: '$(System.DefaultWorkingDirectory)'
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
