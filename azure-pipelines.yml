@@ -14,29 +14,35 @@ variables:
   BuildConfiguration: "release"
   BuildPlatform: "Any Cpu"
 steps:
+  - task: SonarCloudPrepare@1
+    inputs:
+      SonarCloud: 'Sonar service connection'
+      organization: 'smkr-devops'
+      scannerMode: 'MSBuild'
+      projectKey: 'smkr-devops'
+      projectName: 'dotnet-smkr-project'
   - task: NuGetToolInstaller@1
+    displayName: "Nuget version"
     inputs:
       versionSpec: '4.9.1'
   - task: NuGetCommand@2
+    displayName: "Nuget restore"
     inputs:
       command: 'restore'
       restoreSolution: 'Dotnet/FlowerShop.sln'
       feedsToUse: 'select'
   - task: VSBuild@1
+    displayName: "visual studio build"
     inputs:
       solution: 'Dotnet/FlowerShop.sln'
       vsVersion: '16.0'
       msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
       platform: '$(BuildPlatform)'
       configuration: '$(BuildConfiguration)'
-  - task: VSTest@2
+  - task: SonarCloudAnalyze@1
+  - task: SonarCloudPublish@1
     inputs:
-      testSelector: 'testAssemblies'
-      testAssemblyVer2: |
-        **\*test*.dll
-        !**\*TestAdapter.dll
-        !**\obj\**
-      searchFolder: '$(System.DefaultWorkingDirectory)'
+      pollingTimeoutSec: '300'
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
@@ -48,6 +54,7 @@ steps:
       downloadType: 'single'
       downloadPath: '$(System.ArtifactsDirectory)'
   - task: AzureRmWebAppDeployment@4
+    displayName: "azure app services"
     inputs:
       ConnectionType: 'AzureRM'
       azureSubscription: 'MANI''s AZURE(12c0d075-059f-4523-8432-5eee63b9ac55)'
