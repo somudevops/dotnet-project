@@ -1,0 +1,63 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  Env: "Dev"
+  BuildConfiguration: "Release"
+  BuildPlatform: "Any Cpu"
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+          - task: SonarCloudPrepare@1
+            inputs:
+              SonarCloud: 'Sonar service connection'
+              organization: 'smkr-devops'
+              scannerMode: 'MSBuild'
+              projectKey: 'smkr-devops'
+              projectName: 'smkr-project'
+          - task: NuGetToolInstaller@1
+            inputs:
+              versionSpec: '4.9.1'
+          - task: NuGetCommand@2
+            inputs:
+              command: 'restore'
+              restoreSolution: '**/*.sln'
+              feedsToUse: 'select'
+          - task: VSBuild@1
+            inputs:
+              solution: '**\*.sln'
+              msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
+              platform: '$(BuildPlatform)'
+              configuration: '$(BuildConfiguration)'
+          - task: SonarCloudAnalyze@1
+          - task: SonarCloudPublish@1
+            inputs:
+              pollingTimeoutSec: '300'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'          
+
+  - stage: Release
+    jobs:
+      - job: Release
+        steps:
+          - task: DownloadBuildArtifacts@1
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              downloadPath: '$(System.ArtifactsDirectory)'
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'MANI''s AZURE(12c0d075-059f-4523-8432-5eee63b9ac55)'
+              appType: 'webApp'
+              appName: 'dotnet-project-webapp'
+              package: '$(System.DefaultWorkingDirectory)'
+              deploymentMethod: 'auto'
