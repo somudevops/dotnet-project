@@ -1,0 +1,45 @@
+
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  Env: "Dev"
+  BuildPlatform: "Any Cpu"
+  BuildConfiguration: "Release"
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+        - task: NuGetToolInstaller@1
+          inputs:
+            versionSpec: 
+            checkLatest: true
+        - task: NuGetCommand@2
+          inputs:
+            command: 'restore'
+            restoreSolution: '**/*.sln'
+            feedsToUse: 'select'
+        - task: VSBuild@1
+          inputs:
+            solution: '**\*.sln'
+            msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
+            platform: '$(BuildPlatform)'
+            configuration: '$(BuildConfiguration)'
+        - task: VSTest@2
+          inputs:
+            testSelector: 'testAssemblies'
+            testAssemblyVer2: |
+              **\*test*.dll
+              !**\*TestAdapter.dll
+              !**\obj\**
+            searchFolder: '$(System.DefaultWorkingDirectory)'
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'drop'
+            publishLocation: 'Container'
