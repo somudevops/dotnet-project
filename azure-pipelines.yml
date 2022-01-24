@@ -1,4 +1,3 @@
-
 trigger:
 - master
 
@@ -15,31 +14,40 @@ stages:
     jobs:
       - job: Build
         steps:
-        - task: NuGetToolInstaller@1
+          - task: NuGetToolInstaller@1
+            inputs:
+              versionSpec: 
+              checkLatest: true
+          - task: NuGetCommand@2
+            inputs:
+              command: 'restore'
+              restoreSolution: '**/*.sln'
+              feedsToUse: 'select'
+          - task: VSBuild@1
+            inputs:
+              solution: '**\*.sln'
+              msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
+              platform: '$(BuildPlatform)'
+              configuration: '$(BuildConfiguration)'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+
+  - stage: Release
+    jobs:
+      - job: Release
+        steps:
+        - task: DownloadBuildArtifacts@1
           inputs:
-            versionSpec: 
-            checkLatest: true
-        - task: NuGetCommand@2
+            buildType: 'current'
+            downloadType: 'single'
+            downloadPath: '$(System.ArtifactsDirectory)'
+        - task: AzureRmWebAppDeployment@4
           inputs:
-            command: 'restore'
-            restoreSolution: '**/*.sln'
-            feedsToUse: 'select'
-        - task: VSBuild@1
-          inputs:
-            solution: '**\*.sln'
-            msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
-            platform: '$(BuildPlatform)'
-            configuration: '$(BuildConfiguration)'
-        - task: VSTest@2
-          inputs:
-            testSelector: 'testAssemblies'
-            testAssemblyVer2: |
-              **\*test*.dll
-              !**\*TestAdapter.dll
-              !**\obj\**
-            searchFolder: '$(System.DefaultWorkingDirectory)'
-        - task: PublishBuildArtifacts@1
-          inputs:
-            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-            ArtifactName: 'drop'
-            publishLocation: 'Container'
+            ConnectionType: 'AzureRM'
+            azureSubscription: 'MANI''s AZURE(12c0d075-059f-4523-8432-5eee63b9ac55)'
+            appType: 'webApp'
+            WebAppName: 'dotnet-project-webapp'
+            packageForLinux: '$(System.DefaultWorkingDirectory)'
