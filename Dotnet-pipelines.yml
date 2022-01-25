@@ -8,6 +8,7 @@ variables:
   Env: "Dev"
   BuildPlatform: "Any Cpu"
   BuildConfiguration: "Release"
+
 stages:
   - stage: Build
     jobs:
